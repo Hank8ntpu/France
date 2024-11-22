@@ -27,8 +27,8 @@ import re
      #   logging.error(f"Failed to send Discord notification: {response.status_code}, {response.text}")
 
 def calculate_dates(today_date_str):
-    start_date = datetime(2025, 1, 20)  # 固定起始日期
-    end_date = datetime(2025, 2, 10)    # 固定結束日期
+    start_date = datetime(2025, 2, 9)  # 固定起始日期
+    end_date = datetime(2025, 2, 26)    # 固定結束日期
 
     return start_date.strftime("%Y/%m/%d"), end_date.strftime("%Y/%m/%d")
  
