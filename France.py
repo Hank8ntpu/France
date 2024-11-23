@@ -28,7 +28,7 @@ import re
 
 start_date = datetime(2025, 1, 20)  # 固定起始日期
 end_date = datetime(2025, 2, 8)    # 固定結束日期
- return start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")
+return start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")
 
 #def calculate_dates(today_date_str):
  #   today = datetime.strptime(today_date_str, "%Y-%m-%d")
