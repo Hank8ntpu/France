@@ -29,7 +29,7 @@ import re
 def calculate_dates(today_date_str):
     today = datetime.strptime(today_date_str, "%Y-%m-%d")
     start_date = datetime(2025, 1, 20)
-    end_date = start_date + timedelta(days=(today - datetime(2024, 10, 21)).days)
+    end_date = start_date + timedelta(days=(today - datetime(2024, 10, 24)).days)
 
     # 如果是 2024-12-20 及以後，結束日期固定為 2025-03-21
     if today >= datetime(2024, 12, 20):
