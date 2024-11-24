@@ -152,15 +152,11 @@ def scrape_flights(start_date_str, end_date_str):
         if not os.path.exists(output_directory):
             os.makedirs(output_directory)
         
-        # 準備寫入 CSV 檔案
-        with open(f'{output_directory}/France_{today_date}_fin.csv', 'a', newline='', encoding='utf-8-sig') as csv_file:
-            csv_writer = csv.writer(csv_file)
-
-            # 寫入標題
+           # 寫入標題
             csv_writer.writerow([
                 "出發日期", "出發時間", "出發機場代號", 
                 "抵達時間", "抵達機場代號", "航空公司", 
-                "停靠站數量", "停留時間", "飛行時間", 
+                "停靠站數量", "停留時間", "停留城市", "飛行時間", 
                 "是否過夜", "機型", "航班代碼", "艙等", "價格"
             ])
 
@@ -172,13 +168,7 @@ def scrape_flights(start_date_str, end_date_str):
                     
                     # 點擊航班更多資訊
                     flight_buttons = flight_element.find_elements(By.XPATH, ".//div[@class='vJccne  trZjtf']//div[@class='VfPpkd-dgl2Hf-ppHlrf-sM5MNb']//button")
-                    if flight_buttons:
-                        button = flight_buttons[0]
-                        scroll_to_element(button)
-                        time.sleep(1)
-                        if not click_element(button):
-                            print(f"無法點擊第 {index + 1} 個航班")
-                            continue
+                    flight_buttons[0].click()  # 點擊第一個按鈕
                     
                     # 等待頁面加載
                     time.sleep(1)
@@ -224,17 +214,50 @@ def scrape_flights(start_date_str, end_date_str):
 
                         if layover != "直達航班。":
                             try:
-                                # 嘗試抓取停留時間的內部 HTML
+                                # 嘗試抓取停留時間與停靠城市的內部 HTML
                                 layover_info_element = flight_element.find_element(By.XPATH, './/div[@class = "tvtJdb eoY5cb y52p7d"]').get_attribute("innerHTML")
+
+                                # 移除 HTML 中的 &nbsp;
+                                layover_info_element = layover_info_element.replace("&nbsp;", " ")
+                                
+                                # 停留時間的正則表達式
                                 time_pattern = r'(\d+\s*(小時|hr|hours)\s*\d+\s*(分鐘|min|minutes)|\d+\s*(小時|hr|hours)|\d+\s*(分鐘|min|minutes))'
-                                match = re.search(time_pattern, layover_info_element)
-                                layover_time = match.group(1) if match else "未找到停留時間"
-                                if not match:
+                                time_match = re.search(time_pattern, layover_info_element)
+                                layover_time = time_match.group(1) if time_match else "未找到停留時間"
+
+                                
+                                # 第一階段：嘗試使用原來的邏輯
+                                city_pattern = r'>([^<>]*?)\s*<span dir="ltr">\((\w+)\)</span>'
+                                city_match = re.search(city_pattern, layover_info_element)
+
+                                if city_match:
+                                    layover_city = f"{city_match.group(1)} ({city_match.group(2)})"
+                                else:
+                                    # 第二階段：匹配新格式
+                                    city_pattern = r'([\u4e00-\u9fa5\w\s]+)<span[^>]*></span><div[^>]*>從\s(\w+)\s轉機至\s(\w+)'
+                                    city_match = re.search(city_pattern, layover_info_element)
+                                    if city_match:
+                                        layover_city = f"{city_match.group(1)} (從 {city_match.group(2)} 至 {city_match.group(3)})"
+                                    else:
+                                        # 停靠城市的正則表達式
+                                        city_pattern = r'([\u4e00-\u9fa5\w\s]+)<span[^>]*></span><div[^>]*>停留時間會跨日<span[^>]*></span>從\s(\w+)\s轉機至\s(\w+)'
+                                        city_match = re.search(city_pattern, layover_info_element)
+                                        if city_match:
+                                            layover_city = f"{city_match.group(1)} (從 {city_match.group(2)} 至 {city_match.group(3)})"
+                                        else:
+                                            layover_city = "未找到停靠城市"                          
+
+                                if not time_match:
                                     print("未找到停留時間的 HTML:", layover_info_element)
+                                if not city_match:
+                                    print("未找到停靠城市的 HTML:", layover_info_element)
+
                             except NoSuchElementException:
-                                    layover_time = "未找到停留時間"
+                                layover_time = "未找到停留時間"
+                                layover_city = "未找到停靠城市"
                         else:
                             layover_time = "Non-stop"
+                            layover_city = "Non-stop"
 
                         try:
                             # 檢查是否有 "Overnight" 元素
@@ -250,18 +273,18 @@ def scrape_flights(start_date_str, end_date_str):
                                                 
                         # 抓取艙等
                         cabin_classes = flight_element.find_elements(By.XPATH, './/span[@class="Xsgmwe"][2]')
-                        cabin_class = ' '.join([element.text.strip() for element in cabin_classes])                        
-                                                
+                        cabin_class = ' '.join([element.text.strip() for element in cabin_classes])  
+
                         try:
                             # 嘗試第一個 XPath
                             travel_time_element = flight_element.find_element(By.XPATH, ".//div[@class='hF6lYb sSHqwe ogfYpf tPgKwe']//span[5]").get_attribute("innerHTML")
-                            match = re.search(r'(\d+\s*(小時|hours?|hr)\s*\d+\s*(分鐘|minutes?|min)?|\d+\s*(小時|hours?|hr)|\d+\s*(分鐘|minutes?|min))', travel_time_element)
+                            match = re.search(r'(\d+ 小時(?: \d+ 分鐘)?)', travel_time_element)
                             flight_duration = match.group(1) if match else None
 
                             # 如果第一個 XPath 找不到有效內容，再嘗試第二個 XPath
                             if not flight_duration:
                                 travel_time_element = flight_element.find_element(By.XPATH, ".//div[@class='hF6lYb sSHqwe ogfYpf tPgKwe']//span[6]").get_attribute("innerHTML")
-                                match = re.search(r'(\d+\s*(小時|hours?|hr)\s*\d+\s*(分鐘|minutes?|min)?|\d+\s*(小時|hours?|hr)|\d+\s*(分鐘|minutes?|min))', travel_time_element)
+                                match = re.search(r'(\d+ 小時(?: \d+ 分鐘)?)', travel_time_element)
                                 flight_duration = match.group(1) if match else "未找到飛行時間"
 
                         except NoSuchElementException:
@@ -278,7 +301,7 @@ def scrape_flights(start_date_str, end_date_str):
                         csv_writer.writerow([
                             formatted_date, departure_time, departure_airport,
                             arrival_time, arrival_airport, airline,
-                            layover, layover_time, flight_duration,
+                            layover, layover_time, layover_city, flight_duration,
                             overnight, aircraft, flight_number, cabin_class,
                             price
                         ])
