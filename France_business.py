@@ -26,19 +26,19 @@ import re
     #else:
      #   logging.error(f"Failed to send Discord notification: {response.status_code}, {response.text}")
 
-def calculate_dates(today_date_str):
-    today = datetime.strptime(today_date_str, "%Y-%m-%d")
-    start_date = datetime(2025, 1, 20)
-    end_date = start_date + timedelta(days=(today - datetime(2024, 10, 24)).days)
+#def calculate_dates(today_date_str):
+#    today = datetime.strptime(today_date_str, "%Y-%m-%d")
+ #   start_date = datetime(2025, 1, 20)
+  #  end_date = start_date + timedelta(days=(today - datetime(2024, 10, 24)).days)
 
     # 如果是 2024-12-20 及以後，結束日期固定為 2025-03-21
-    if today >= datetime(2024, 12, 20):
-        end_date = datetime(2025, 3, 21)
+   # if today >= datetime(2024, 12, 20):
+    #    end_date = datetime(2025, 3, 21)
         # 2025-01-20 之後，起始日開始遞增
-        if today >= datetime(2025, 1, 20):
-            start_date += timedelta(days=(today - datetime(2025, 1, 20)).days)
+     #   if today >= datetime(2025, 1, 20):
+      #      start_date += timedelta(days=(today - datetime(2025, 1, 20)).days)
 
-    return start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")
+   # return start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")
 
 # 設置 Selenium 驅動
 options = Options()
@@ -71,6 +71,9 @@ def click_element(element):
     except Exception as e:
         print(f"點擊元素失敗: {e}")
         return False
+     
+start_date = "2025-02-04"
+end_date = "2025-02-25"
 
 def scrape_flights(start_date_str, end_date_str):
     start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
