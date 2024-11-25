@@ -26,10 +26,6 @@ import re
     #else:
      #   logging.error(f"Failed to send Discord notification: {response.status_code}, {response.text}")
 
-start_date = datetime(2025, 1, 20)  # 固定起始日期
-end_date = datetime(2025, 2, 8)    # 固定結束日期
-return start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")
-
 #def calculate_dates(today_date_str):
  #   today = datetime.strptime(today_date_str, "%Y-%m-%d")
   #  start_date = datetime(2025, 1, 20)
@@ -75,6 +71,9 @@ def click_element(element):
     except Exception as e:
         print(f"點擊元素失敗: {e}")
         return False
+
+start_date = "2025-02-04"
+end_date = "2025-02-25"
 
 def scrape_flights(start_date_str, end_date_str):
     start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
