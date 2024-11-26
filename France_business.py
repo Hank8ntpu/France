@@ -335,8 +335,8 @@ def scrape_flights(start_date_str, end_date_str):
     return success_count
 
 # 根據當前日期計算動態起始日與結束日
-today_str = datetime.now().strftime("%Y-%m-%d")
-start_date_input, end_date_input = calculate_dates(today_str)
+# today_str = datetime.now().strftime("%Y-%m-%d")
+# start_date_input, end_date_input = calculate_dates(today_str)
 
 try:
     success_count = 0  # 初始化 success_count
