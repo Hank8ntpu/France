@@ -26,20 +26,21 @@ import re
     #else:
      #   logging.error(f"Failed to send Discord notification: {response.status_code}, {response.text}")
 
-#def calculate_dates(today_date_str):
+# def calculate_dates(today_date_str):
 #    today = datetime.strptime(today_date_str, "%Y-%m-%d")
- #   start_date = datetime(2025, 1, 20)
-  #  end_date = start_date + timedelta(days=(today - datetime(2024, 10, 24)).days)
+#    start_date = datetime(2025, 1, 20)
+#    end_date = start_date + timedelta(days=(today - datetime(2024, 10, 21)).days)
 
-    # 如果是 2024-12-20 及以後，結束日期固定為 2025-03-21
-   # if today >= datetime(2024, 12, 20):
-    #    end_date = datetime(2025, 3, 21)
-        # 2025-01-20 之後，起始日開始遞增
-     #   if today >= datetime(2025, 1, 20):
-      #      start_date += timedelta(days=(today - datetime(2025, 1, 20)).days)
+    # 如果日期是 2024-12-20 及以後，結束日期固定為 2025-03-21
+#    if today >= datetime(2024, 12, 20):
+#        end_date = datetime(2025, 3, 21)
 
-   # return start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")
+    # 如果日期是 2025-01-20 及以後，起始日開始遞增
+#    if today >= datetime(2025, 1, 20):
+#        start_date += timedelta(days=(today - datetime(2025, 1, 20)).days)
 
+#    return start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")
+ 
 # 設置 Selenium 驅動
 options = Options()
 options.add_argument("--no-sandbox")
@@ -71,9 +72,6 @@ def click_element(element):
     except Exception as e:
         print(f"點擊元素失敗: {e}")
         return False
-     
-start_date = "2025-01-20"
-end_date = "2025-02-03"
 
 def scrape_flights(start_date_str, end_date_str):
     start_date = datetime.strptime(start_date_str, "%Y-%m-%d")
@@ -164,6 +162,7 @@ def scrape_flights(start_date_str, end_date_str):
                 "出發日期", "出發時間", "出發機場代號", 
                 "抵達時間", "抵達機場代號", "航空公司", 
                 "停靠站數量", "停留時間", "停留城市", "飛行時間", 
+                "第一段飛行時間", "第二段飛行時間", 
                 "是否過夜", "機型", "航班代碼", "艙等", "價格"
             ])
 
@@ -271,6 +270,8 @@ def scrape_flights(start_date_str, end_date_str):
                         else:
                             layover_time = "Non-stop"
                             layover_city = "Non-stop"
+
+
                         try:
                             # 檢查是否有 "Overnight" 元素
                             overnight_element = flight_element.find_element(By.XPATH, './/div[@class="qj0iCb" and contains(text(), "Overnight")]').get_attribute("innerHTML")
@@ -287,20 +288,46 @@ def scrape_flights(start_date_str, end_date_str):
                         cabin_classes = flight_element.find_elements(By.XPATH, './/span[@class="Xsgmwe"][2]')
                         cabin_class = ' '.join([element.text.strip() for element in cabin_classes])                        
                                                 
+                        # 抓取飛行時間
                         try:
                             # 嘗試第一個 XPath
                             travel_time_element = flight_element.find_element(By.XPATH, ".//div[@class='hF6lYb sSHqwe ogfYpf tPgKwe']//span[5]").get_attribute("innerHTML")
-                            match = re.search(r'(\d+\s*(小時|hours?|hr)\s*\d+\s*(分鐘|minutes?|min)?|\d+\s*(小時|hours?|hr)|\d+\s*(分鐘|minutes?|min))', travel_time_element)
+                            match = re.search(r'(\d+ 小時(?: \d+ 分鐘)?)', travel_time_element)
                             flight_duration = match.group(1) if match else None
 
                             # 如果第一個 XPath 找不到有效內容，再嘗試第二個 XPath
                             if not flight_duration:
                                 travel_time_element = flight_element.find_element(By.XPATH, ".//div[@class='hF6lYb sSHqwe ogfYpf tPgKwe']//span[6]").get_attribute("innerHTML")
-                                match = re.search(r'(\d+\s*(小時|hours?|hr)\s*\d+\s*(分鐘|minutes?|min)?|\d+\s*(小時|hours?|hr)|\d+\s*(分鐘|minutes?|min))', travel_time_element)
+                                match = re.search(r'(\d+ 小時(?: \d+ 分鐘)?)', travel_time_element)
                                 flight_duration = match.group(1) if match else "未找到飛行時間"
 
                         except NoSuchElementException:
                             flight_duration = "未找到飛行時間"
+
+                        # 抓取第一段與第二段飛行時間    
+                        try:
+                            # 抓取所有符合條件的飛行時間元素
+                            flight_durations = flight_element.find_elements(By.XPATH, ".//div[@class='P102Lb sSHqwe y52p7d']")
+
+                            # 提取第一段與第二段飛行時間
+                            if len(flight_durations) >= 1:
+                                first_flight_duration = flight_durations[0].get_attribute("innerHTML")
+                                match = re.search(r'(\d+\s*(小時|hours?|hr)\s*\d+\s*(分鐘|minutes?|min)?|\d+\s*(小時|hours?|hr)|\d+\s*(分鐘|minutes?|min))', first_flight_duration)
+                                first_flight_duration = match.group(1) if match else "未找到第一段飛行時間"
+                            else:
+                                first_flight_duration = "未找到第一段飛行時間"
+
+                            if len(flight_durations) >= 2:
+                                second_flight_duration = flight_durations[1].get_attribute("innerHTML")
+                                match = re.search(r'(\d+\s*(小時|hours?|hr)\s*\d+\s*(分鐘|minutes?|min)?|\d+\s*(小時|hours?|hr)|\d+\s*(分鐘|minutes?|min))', second_flight_duration)
+                                second_flight_duration = match.group(1) if match else "未找到第二段飛行時間"
+                            else:
+                                second_flight_duration = "未找到第二段飛行時間"
+
+                        except Exception as e:
+                            first_flight_duration = "抓取過程發生錯誤"
+                            second_flight_duration = "抓取過程發生錯誤"
+                            print(f"錯誤詳情: {str(e)}")
 
                         # 抓取價格
                         price = flight_element.find_element(By.XPATH, './/div[contains(@class, "FpEdX")]//span').get_attribute("innerHTML")
@@ -314,6 +341,7 @@ def scrape_flights(start_date_str, end_date_str):
                             formatted_date, departure_time, departure_airport,
                             arrival_time, arrival_airport, airline,
                             layover, layover_time, layover_city, flight_duration,
+                            first_flight_duration, second_flight_duration,
                             overnight, aircraft, flight_number, cabin_class,
                             price
                         ])
@@ -326,7 +354,6 @@ def scrape_flights(start_date_str, end_date_str):
                 except Exception as e:
                     print(f"無法點擊第 {index + 1} 個航班: {e}")
                     continue
-
 
         # 更新當前日期
         current_date += delta
@@ -341,6 +368,8 @@ def scrape_flights(start_date_str, end_date_str):
 try:
     success_count = 0  # 初始化 success_count
     # 調用函式
+    start_date_input = "2025-01-20"  # 固定起始日期
+    end_date_input = "2025-02-05"    # 固定結束日期
     success_count = scrape_flights(start_date_input, end_date_input)
     # 發送成功通知
    # send_discord_notification(f"共抓取 {success_count} 個航班，日期範圍: {start_date_input} 到 {end_date_input}")
