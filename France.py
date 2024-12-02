@@ -340,7 +340,8 @@ def scrape_flights(start_date_str, end_date_str):
                         csv_writer.writerow([
                             formatted_date, departure_time, departure_airport,
                             arrival_time, arrival_airport, airline,
-                            layover, layover_time, flight_duration,
+                            layover, layover_time, layover_city, flight_duration,
+                            first_flight_duration, second_flight_duration,
                             overnight, aircraft, flight_number, cabin_class,
                             price
                         ])
