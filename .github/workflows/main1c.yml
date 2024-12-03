@@ -48,5 +48,5 @@ jobs:
     - name: Upload CSV as artifacts
       uses: actions/upload-artifact@v3  # 使用最新版本
       with:
-        name: France-data
+        name: France_3-data
         path: data/*.csv  # 上傳所有生成的 CSV 文件
